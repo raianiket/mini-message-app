@@ -1,11 +1,18 @@
 import React from 'react';
 //import logo from './logo.svg';
 import './App.css';
+import ChatBar from './Chatbar';
+import Sidebar from './Sidebar';
 
 function App() {
   return (
     <div className="app">
-      <h1>Mini Messanger</h1>
+      <div className="app_body">
+      <Sidebar />
+      <ChatBar />
+
+      </div>
+      
     </div>
   );
 }
