@@ -20,6 +20,11 @@
 .chatbar_header_info> p{
     color: gray;
 }
+.chat_header_right{
+    display: flex;
+    justify-content: space-between;
+    min-width: 100px;
+}
 .chatbar_body{
     flex:1;
     background-image: url("https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcQx3NiA3vZ6gt_WNQyDlSgF_PBv-q0NhNUabQ&usqp=CAU");
@@ -64,13 +69,14 @@
     display: flex;
 }
 .chatbar_footer> form> input{
+    outline-width: 0;
     flex: 1;
     border-radius: 30px;
     padding: 10px;
     border: none;
 }
 .chatbar_footer> form> button{
-    border: none;
+    display: none;
 }
 .chatbar_footer> .MuiSvgIcon-root{
     padding: 10px;
