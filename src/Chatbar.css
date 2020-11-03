@@ -62,6 +62,7 @@
     align-items: center;
     height: 62px;
     border-top: 1px solid lightgrey;
+    position: relative;
 
 }
 .chatbar_footer> form{
@@ -81,4 +82,10 @@
 .chatbar_footer> .MuiSvgIcon-root{
     padding: 10px;
     color: gray;
+}
+.emoji-picker{
+    position: absolute;
+    bottom: 63px;
+    left: 0;
+    cursor: pointer;
 }

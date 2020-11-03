@@ -9,6 +9,7 @@ import { useParams } from 'react-router-dom'
 import db from './firebase'
 import { useStateValue } from './StateProvider'
 import firebase from 'firebase'
+import Picker, { SKIN_TONE_MEDIUM_DARK } from 'emoji-picker-react'
 
 
 function ChatBar({}) {
@@ -19,6 +20,8 @@ function ChatBar({}) {
     const [roomName, setRoomName] = useState('')
     const [messages, setMessages] = useState([])
     const [{user},dispatch] = useStateValue()
+    const [chosenEmoji, setChosenEmoji] = useState(null)
+    const [emojiShown, setEmojiShown] = useState(false);
 
     useEffect(() => {
         if(roomId){
@@ -56,6 +59,11 @@ function ChatBar({}) {
         setSeed(Math.floor(Math.random()*5000))
     }, [roomId])
 
+    const onEmojiClick = (event, emojiObject) => {
+        setChosenEmoji(emojiObject);
+        //console.log(emojiObject)
+        setInput(input+emojiObject.emoji);
+    }
 
     return (
         <div className="chatbar">
@@ -105,7 +113,11 @@ function ChatBar({}) {
                 </p> */}
             </div>
             <div className="chatbar_footer">
-                <InsertEmoticonIcon />
+                {
+                    emojiShown &&
+                    <span className='emoji-picker'><Picker onEmojiClick={onEmojiClick} skinTone={SKIN_TONE_MEDIUM_DARK} /></span>
+                }
+            <InsertEmoticonIcon onClick={() => setEmojiShown(!emojiShown)}  />
                 <form>
                     <input value={input} onChange={e =>setInput(e.target.value)} placeholder="Type your message" type="text"/>
                     <button onClick ={sendMessage} type="submit">Send your message</button>
