@@ -214,14 +214,20 @@ function ChatBar() {
                     </>
                 ) : (
                     <>
-                        <InitialsAvatar name={roomName} isGroup={roomType !== 'direct'} />
-                        <div className="chatbar_header_info">
-                            <h3>{roomName}</h3>
-                            <p>
-                                {othersTyping.length > 0
-                                    ? `${othersTyping.join(', ')} typing...`
-                                    : lastMessage ? `Last seen ${formatFullTimestamp(lastMessage.timeStamp)}` : 'No messages yet'}
-                            </p>
+                        <div
+                            className="chatbar_header_identity"
+                            role="button"
+                            onClick={() => setInfoOpen(true)}
+                        >
+                            <InitialsAvatar name={roomName} isGroup={roomType !== 'direct'} />
+                            <div className="chatbar_header_info">
+                                <h3>{roomName}</h3>
+                                <p>
+                                    {othersTyping.length > 0
+                                        ? `${othersTyping.join(', ')} typing...`
+                                        : lastMessage ? `Last seen ${formatFullTimestamp(lastMessage.timeStamp)}` : 'No messages yet'}
+                                </p>
+                            </div>
                         </div>
                         <div className="chat_header_right">
                             <IconButton size="small" onClick={() => setSearchOpen(true)}>
@@ -234,12 +240,10 @@ function ChatBar() {
                                 <MoreVertIcon fontSize="small" />
                             </IconButton>
                             <Menu anchorEl={menuAnchor} open={!!menuAnchor} onClose={() => setMenuAnchor(null)}>
-                                {roomType === 'group' && (
-                                    <MenuItem onClick={() => { setMenuAnchor(null); setInfoOpen(true) }}>
-                                        <ListItemIcon><InfoOutlinedIcon fontSize="small" /></ListItemIcon>
-                                        <ListItemText>Group info</ListItemText>
-                                    </MenuItem>
-                                )}
+                                <MenuItem onClick={() => { setMenuAnchor(null); setInfoOpen(true) }}>
+                                    <ListItemIcon><InfoOutlinedIcon fontSize="small" /></ListItemIcon>
+                                    <ListItemText>{roomType === 'group' ? 'Group info' : 'Chat info'}</ListItemText>
+                                </MenuItem>
                                 <MenuItem onClick={clearChat}>
                                     <ListItemIcon><DeleteSweepIcon fontSize="small" /></ListItemIcon>
                                     <ListItemText>Clear chat</ListItemText>

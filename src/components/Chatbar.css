@@ -11,6 +11,16 @@
     border-bottom: 1px solid var(--border);
     background-color: var(--bg-panel);
 }
+.chatbar_header_identity{
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    flex: 1;
+    min-width: 0;
+}
+.chatbar_header_identity[role="button"]{
+    cursor: pointer;
+}
 .chatbar_header_info{
     flex: 1;
     min-width: 0;
