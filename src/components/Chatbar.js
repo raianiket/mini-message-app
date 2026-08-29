@@ -8,6 +8,8 @@ import DeleteSweepIcon from '@mui/icons-material/DeleteSweep'
 import DeleteOutlineIcon from '@mui/icons-material/DeleteOutlined'
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever'
 import KeyboardArrowDownIcon from '@mui/icons-material/KeyboardArrowDown'
+import DoneIcon from '@mui/icons-material/Done'
+import DoneAllIcon from '@mui/icons-material/DoneAll'
 import React, { useState, useEffect, useRef } from 'react'
 import './Chatbar.css'
 import InsertEmoticonIcon from '@mui/icons-material/InsertEmoticon'
@@ -24,6 +26,7 @@ import EmojiPicker, { SkinTones, Theme } from 'emoji-picker-react'
 
 const TYPING_TIMEOUT = 3000
 const MAX_IMAGE_BYTES = 700 * 1024
+const PRESENCE_ONLINE_WINDOW_MS = 25000
 
 function ChatBar() {
 
@@ -34,6 +37,9 @@ function ChatBar() {
     const [roomName, setRoomName] = useState('')
     const [roomType, setRoomType] = useState('group')
     const [memberNames, setMemberNames] = useState({})
+    const [lastRead, setLastRead] = useState({})
+    const [otherLastActive, setOtherLastActive] = useState(null)
+    const [, forcePresenceRecheck] = useState(0)
     const [infoOpen, setInfoOpen] = useState(false)
     const [typingUsers, setTypingUsers] = useState({})
     const [messages, setMessages] = useState([])
@@ -54,9 +60,11 @@ function ChatBar() {
         if(roomId){
             const unsubscribeRoom = onSnapshot(doc(db, 'rooms', roomId), snapshot => {
                 const data = snapshot.data()
+                if (!data) return
                 setRoomName(data.name)
                 setRoomType(data.type || 'group')
                 setMemberNames(data.memberNames || {})
+                setLastRead(data.lastRead || {})
                 setTypingUsers(data.typing || {})
             });
 
@@ -79,6 +87,29 @@ function ChatBar() {
         atBottomRef.current = true
         setShowJump(false)
     }, [roomId])
+
+    // Mark the room read whenever it's open and its messages change - approximates
+    // "seen" without a dedicated per-message read event.
+    useEffect(() => {
+        if (!roomId) return
+        updateDoc(doc(db, 'rooms', roomId), { [`lastRead.${user.uid}`]: serverTimestamp() }).catch(() => {})
+    }, [roomId, messages.length, user.uid])
+
+    // ponytail: presence via a client heartbeat (App.js) rather than a real
+    // onDisconnect - Firestore alone can't detect a closed tab, so "online"
+    // just means "wrote a heartbeat within the last ~25s". Upgrade path is
+    // Realtime Database's onDisconnect if true disconnect detection is needed.
+    useEffect(() => {
+        if (roomType !== 'direct') { setOtherLastActive(null); return }
+        const otherUid = Object.keys(memberNames).find(uid => uid !== user.uid && !uid.startsWith('sender:'))
+        if (!otherUid) { setOtherLastActive(null); return }
+        return onSnapshot(doc(db, 'users', otherUid), snap => setOtherLastActive(snap.data()?.lastActive || null))
+    }, [roomType, memberNames, user.uid])
+
+    useEffect(() => {
+        const interval = setInterval(() => forcePresenceRecheck(n => n + 1), 5000)
+        return () => clearInterval(interval)
+    }, [])
 
     const handleScroll = () => {
         const el = scrollRef.current
@@ -195,6 +226,13 @@ function ChatBar() {
         ? messages.filter(m => m.message?.toLowerCase().includes(searchTerm.toLowerCase()))
         : messages
     const othersTyping = Object.entries(typingUsers).filter(([uid]) => uid !== user.uid).map(([, name]) => name)
+    const isOtherOnline = otherLastActive && Date.now() - otherLastActive.toMillis() < PRESENCE_ONLINE_WINDOW_MS
+    const presenceLabel = roomType === 'direct' && otherLastActive
+        ? (isOtherOnline ? 'online' : `last seen ${formatFullTimestamp(otherLastActive)}`)
+        : null
+    const isReadByOthers = (message) => message.timeStamp && Object.entries(lastRead).some(
+        ([uid, readAt]) => uid !== user.uid && readAt && readAt.toMillis() >= message.timeStamp.toMillis()
+    )
 
     return (
         <div className="chatbar">
@@ -225,7 +263,7 @@ function ChatBar() {
                                 <p>
                                     {othersTyping.length > 0
                                         ? `${othersTyping.join(', ')} typing...`
-                                        : lastMessage ? `Last seen ${formatFullTimestamp(lastMessage.timeStamp)}` : 'No messages yet'}
+                                        : presenceLabel || (lastMessage ? `Last seen ${formatFullTimestamp(lastMessage.timeStamp)}` : 'No messages yet')}
                                 </p>
                             </div>
                         </div>
@@ -281,7 +319,14 @@ function ChatBar() {
                                 )}
                                 {message.imageUrl && <img className="chatbar_body_image" src={message.imageUrl} alt="attachment" />}
                                 {message.message}
-                                <span className="chatbar_body_timeStamp">{formatFullTimestamp(message.timeStamp)}</span>
+                                <span className="chatbar_body_timeStamp">
+                                    {formatFullTimestamp(message.timeStamp)}
+                                    {isOwn && (
+                                        isReadByOthers(message)
+                                            ? <DoneAllIcon fontSize="inherit" className="chatbar_tick chatbar_tick_read" />
+                                            : <DoneIcon fontSize="inherit" className="chatbar_tick" />
+                                    )}
+                                </span>
                             </p>
                         )
                     })}

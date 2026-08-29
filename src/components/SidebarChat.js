@@ -8,7 +8,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import InitialsAvatar from './InitialsAvatar'
 import { formatMessageTime, deleteRoom } from '../utils'
 
-function SidebarChat({ id, name, addNewChat, onAddNewChat, active, isGroup }) {
+function SidebarChat({ id, name, addNewChat, onAddNewChat, active, isGroup, lastRead, myUid, myName }) {
     const [messages, setMessages] = useState([])
     const navigate = useNavigate()
 
@@ -31,6 +31,10 @@ function SidebarChat({ id, name, addNewChat, onAddNewChat, active, isGroup }) {
     }
 
     const lastMessage = messages[messages.length - 1]
+    const myLastRead = lastRead?.[myUid]
+    const unreadCount = messages.filter(m =>
+        m.name !== myName && m.timeStamp && (!myLastRead || m.timeStamp.toMillis() > myLastRead.toMillis())
+    ).length
 
     return !addNewChat ? (
         <Link to={`/rooms/${id}`}>
@@ -43,6 +47,7 @@ function SidebarChat({ id, name, addNewChat, onAddNewChat, active, isGroup }) {
                     </div>
                     <p>{lastMessage?.message || 'No messages yet'}</p>
                 </div>
+                {unreadCount > 0 && <span className="sidebarChat_unread">{unreadCount}</span>}
                 <button type="button" className="sidebarChat_delete" onClick={handleDelete} aria-label={`Delete ${name}`}>
                     <DeleteOutlineIcon fontSize="small" />
                 </button>

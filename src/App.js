@@ -5,7 +5,7 @@ import Sidebar from './components/Sidebar';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import Login from './components/Login';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, updateDoc, serverTimestamp } from 'firebase/firestore';
 import { auth } from './config/firebase';
 import db from './config/firebase';
 import { actionTypes } from './context/reducer';
@@ -40,6 +40,16 @@ function App() {
     })
     return unsubscribe
   }, [dispatch])
+
+  // ponytail: heartbeat-based presence, not a real onDisconnect (that needs
+  // Realtime Database). "online" just means a heartbeat landed recently.
+  useEffect(() => {
+    if (!user) return
+    const beat = () => updateDoc(doc(db, 'users', user.uid), { lastActive: serverTimestamp() }).catch(() => {})
+    beat()
+    const interval = setInterval(beat, 20000)
+    return () => clearInterval(interval)
+  }, [user])
 
   if (!authChecked) {
     return <div className="app" />

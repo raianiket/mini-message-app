@@ -1,6 +1,6 @@
 # mini-message-app
 
-A real-time, WhatsApp-style chat UI built with React and Firebase — Google sign-in, live message sync via Firestore, multiple chat rooms, and an emoji picker. Originally built in 2020 as a way to learn Firebase's realtime data model; revived and modernized in 2026.
+A real-time, WhatsApp-style chat UI built with React and Firebase — Google sign-in, live message sync via Firestore, multiple chat rooms, typing indicators, read receipts, online presence, unread badges, and an emoji picker. Originally built in 2020 as a way to learn Firebase's realtime data model; revived and modernized in 2026.
 
 ![screenshot](image/ss.png)
 
@@ -67,9 +67,9 @@ Google sign-in will only work from an origin that's been authorized in this proj
 
 ## Known limitations
 
-- The sidebar search box (`Sidebar.js`) is UI-only — it isn't wired to any filtering logic.
 - "Add New Chat" uses the browser's native `prompt()` for the room name rather than a custom modal.
-- No message editing/deletion, typing indicators, or read receipts — this was a learning project focused on getting live sync working, not a full WhatsApp clone.
+- No message editing — messages can be sent and deleted, but not edited in place.
+- Online presence is a client heartbeat (`users/{uid}.lastActive`, refreshed every 20s) rather than a true `onDisconnect` signal, so a user who closes the tab abruptly shows "online" for up to ~25s before falling back to "last seen". A real disconnect signal would need Firebase Realtime Database.
 - `react-scripts` (Create React App) is no longer actively maintained upstream; it still builds and runs fine here, but a future pass could migrate to Vite.
 
 ## History

@@ -101,6 +101,9 @@ function Sidebar() {
                         name={room.data.name}
                         isGroup={room.data.type !== 'direct'}
                         active={room.id === activeRoomId}
+                        lastRead={room.data.lastRead}
+                        myUid={user.uid}
+                        myName={user.displayName}
                     />
                 ))}
 
