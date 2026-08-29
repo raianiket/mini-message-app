@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react'
 import './Sidebar.css'
-import DonutLargeIcon from '@material-ui/icons/DonutLarge'
-import { Avatar, IconButton } from '@material-ui/core'
-import ChatIcon from '@material-ui/icons/Chat'
-import MoreVertIcon from '@material-ui/icons/MoreVert'
-import {SearchOutlined} from '@material-ui/icons'
+import DonutLargeIcon from '@mui/icons-material/DonutLarge'
+import { Avatar, IconButton } from '@mui/material'
+import ChatIcon from '@mui/icons-material/Chat'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined'
+import { collection, onSnapshot } from 'firebase/firestore'
 import SidebarChat from './SidebarChat'
 import db from './firebase'
 import { useStateValue } from './StateProvider'
@@ -12,11 +13,10 @@ import { useStateValue } from './StateProvider'
 
 function Sidebar() {
     const [rooms, setRooms] = useState([])
-    const [{user},dispatch] = useStateValue()
-    
+    const [{ user }] = useStateValue()
 
     useEffect(() => {
-        const unsubscribe = db.collection('rooms').onSnapshot((snapshot) => 
+        const unsubscribe = onSnapshot(collection(db, 'rooms'), (snapshot) =>
             setRooms(snapshot.docs.map((doc) => ({
                     id: doc.id,
                     data: doc.data(),
@@ -47,7 +47,7 @@ function Sidebar() {
             </div>
             <div className="sidebar_search">
                 <div className="sidebar_search_container">
-                    <SearchOutlined />
+                    <SearchOutlinedIcon />
                     <input type='text' placeholder='search new chat name' />
                 </div>
             </div>
@@ -56,7 +56,7 @@ function Sidebar() {
                 {rooms.map(room => (
                     <SidebarChat key={room.id} id={room.id} name={room.data.name} />
                 ))}
-                                
+
             </div>
         </div>
     )

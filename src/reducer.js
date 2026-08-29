@@ -1,4 +1,4 @@
-export const intialState = {
+export const initialState = {
     user: null,
 }
 
@@ -7,7 +7,6 @@ export const actionTypes = {
 }
 
 const reducer = (state,action) => {
-    console.log(action)
     switch(action.type){
         case actionTypes.SET_USER:
             return{
@@ -16,7 +15,7 @@ const reducer = (state,action) => {
             };
 
         default:
-            return state;  
+            return state;
     }
 }
 

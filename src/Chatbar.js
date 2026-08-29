@@ -1,56 +1,55 @@
-import { Avatar, IconButton } from '@material-ui/core'
-import { AttachFile, MoreVert, SearchOutlined } from '@material-ui/icons'
+import { Avatar, IconButton } from '@mui/material'
+import AttachFileIcon from '@mui/icons-material/AttachFile'
+import MoreVertIcon from '@mui/icons-material/MoreVert'
+import SearchOutlinedIcon from '@mui/icons-material/SearchOutlined'
 import React, { useState, useEffect } from 'react'
 import './Chatbar.css'
-import InsertEmoticonIcon from '@material-ui/icons/InsertEmoticon'
-import MicIcon from '@material-ui/icons/Mic'
-import axios from './axios'
+import InsertEmoticonIcon from '@mui/icons-material/InsertEmoticon'
+import MicIcon from '@mui/icons-material/Mic'
 import { useParams } from 'react-router-dom'
+import { collection, doc, addDoc, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore'
 import db from './firebase'
 import { useStateValue } from './StateProvider'
-import firebase from 'firebase'
-import Picker, { SKIN_TONE_MEDIUM_DARK } from 'emoji-picker-react'
+import EmojiPicker, { SkinTones } from 'emoji-picker-react'
 
 
-function ChatBar({}) {
+function ChatBar() {
 
     const [input, setInput] = useState('')
     const [seed, setSeed] = useState('')
     const {roomId} = useParams();
     const [roomName, setRoomName] = useState('')
     const [messages, setMessages] = useState([])
-    const [{user},dispatch] = useStateValue()
-    const [chosenEmoji, setChosenEmoji] = useState(null)
+    const [{user}] = useStateValue()
     const [emojiShown, setEmojiShown] = useState(false);
 
     useEffect(() => {
         if(roomId){
-            db.collection('rooms').doc(roomId).onSnapshot(snapshot => (setRoomName(snapshot.data().name)
+            const unsubscribeRoom = onSnapshot(doc(db, 'rooms', roomId), snapshot => (
+                setRoomName(snapshot.data().name)
             ));
 
-            db.collection('rooms').doc(roomId).collection('messages').orderBy('timeStamp','asc').onSnapshot(snapshot => (
+            const messagesQuery = query(collection(db, 'rooms', roomId, 'messages'), orderBy('timeStamp', 'asc'))
+            const unsubscribeMessages = onSnapshot(messagesQuery, snapshot => (
                 setMessages(snapshot.docs.map(doc => doc.data()))
             ))
+
+            return () => {
+                unsubscribeRoom()
+                unsubscribeMessages()
+            }
         }
     }, [roomId])
+
     const sendMessage = async(e) => {
-        e.preventDefault(); 
-        //console.log('input:',input)
+        e.preventDefault();
 
-        // await axios.post('/messages/new', {
-        //     message: input,
-        //     name: 'Ani',
-        //     timeStamp: 'testing',
-        //     received: false,
-        // })
-
-
-        db.collection('rooms').doc(roomId).collection('messages').add({
+        addDoc(collection(db, 'rooms', roomId, 'messages'), {
             message: input,
             name: user.displayName,
-            timeStamp: firebase.firestore.FieldValue.serverTimestamp(),
+            timeStamp: serverTimestamp(),
         })
-        
+
         setInput('')
     }
 
@@ -59,10 +58,8 @@ function ChatBar({}) {
         setSeed(Math.floor(Math.random()*5000))
     }, [roomId])
 
-    const onEmojiClick = (event, emojiObject) => {
-        setChosenEmoji(emojiObject);
-        //console.log(emojiObject)
-        setInput(input+emojiObject.emoji);
+    const onEmojiClick = (emojiData) => {
+        setInput(input+emojiData.emoji);
     }
 
     return (
@@ -72,50 +69,34 @@ function ChatBar({}) {
                 <div className="chatbar_header_info">
                     <h3>{roomName}</h3>
                     <p>Last seen{' '}
-                    {new Date(messages[messages.length - 1] ?.timeStamp?.toDate()).toUTCString()}
+                    {new Date(messages[messages.length - 1]?.timeStamp?.toDate()).toUTCString()}
                     </p>
                 </div>
                 <div className="chat_header_right">
                     <IconButton>
-                        <SearchOutlined />
+                        <SearchOutlinedIcon />
                     </IconButton>
                     <IconButton>
-                        <AttachFile />
+                        <AttachFileIcon />
                     </IconButton>
                     <IconButton>
-                        <MoreVert />
+                        <MoreVertIcon />
                     </IconButton>
                 </div>
             </div>
             <div className="chatbar_body">
-                {messages.map((message) =>(
-                    <p className={`chatbar_message ${message.name === user.displayName &&   'chatbar_reciever'}`}>
+                {messages.map((message, i) =>(
+                    <p key={i} className={`chatbar_message ${message.name === user.displayName && 'chatbar_reciever'}`}>
                     <span className="chatbar_body_name">{message.name}</span>
                     {message.message}
-                    <span className="chatbar_body_timeStamp">{new Date(message.timeStamp ?.toDate()).toUTCString()}</span>
+                    <span className="chatbar_body_timeStamp">{new Date(message.timeStamp?.toDate()).toUTCString()}</span>
                 </p>
                 ))}
-                
-                {/* <p className="chatbar_message chatbar_reciever">
-                    <span className="chatbar_body_name">Chikoo</span>
-                    Hello Aniket!!!!
-                    <span className="chatbar_body_timeStamp">{new Date().toUTCString()}</span>
-                </p>
-                <p className="chatbar_message">
-                    <span className="chatbar_body_name">Chikoo</span>
-                    Hello Aniket!!!!
-                    <span className="chatbar_body_timeStamp">{new Date().toUTCString()}</span>
-                </p>
-                <p className="chatbar_message chatbar_reciever">
-                    <span className="chatbar_body_name">Chikoo</span>
-                    Hello Aniket!!!!
-                    <span className="chatbar_body_timeStamp">{new Date().toUTCString()}</span>
-                </p> */}
             </div>
             <div className="chatbar_footer">
                 {
                     emojiShown &&
-                    <span className='emoji-picker'><Picker onEmojiClick={onEmojiClick} skinTone={SKIN_TONE_MEDIUM_DARK} /></span>
+                    <span className='emoji-picker'><EmojiPicker onEmojiClick={onEmojiClick} defaultSkinTone={SkinTones.MEDIUM_DARK} /></span>
                 }
             <InsertEmoticonIcon onClick={() => setEmojiShown(!emojiShown)}  />
                 <form>

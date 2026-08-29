@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import './SidebarChat.css'
-import { Avatar } from '@material-ui/core'
+import { Avatar } from '@mui/material'
+import { collection, addDoc, onSnapshot, orderBy, query } from 'firebase/firestore'
 import db from './firebase'
 import { Link } from 'react-router-dom'
 
@@ -10,9 +11,11 @@ function SidebarChat({ id, name, addNewChat }) {
 
     useEffect(() => {
         if (id) {
-            db.collection('rooms').doc(id).collection('messages').orderBy('timeStamp', 'asc').onSnapshot(snapshot => (
+            const messagesQuery = query(collection(db, 'rooms', id, 'messages'), orderBy('timeStamp', 'asc'))
+            const unsubscribe = onSnapshot(messagesQuery, snapshot => (
                 setMessages(snapshot.docs.map(doc => doc.data()))
             ))
+            return () => unsubscribe()
         }
     }, [id])
 
@@ -24,12 +27,12 @@ function SidebarChat({ id, name, addNewChat }) {
         const roomName = prompt('Please Enter name for Chat: ')
 
         if(roomName){
-            db.collection('rooms').add({
+            addDoc(collection(db, 'rooms'), {
                 name: roomName,
             })
         }
     }
-    
+
 
     return !addNewChat ? (
         <Link to={`/rooms/${id}`}>
@@ -41,7 +44,7 @@ function SidebarChat({ id, name, addNewChat }) {
                 </div>
             </div>
         </Link>
-        
+
     ): (
         <div onClick={createChat} className="sidebarChat">
             <h2>Add New Chat</h2>

@@ -1,72 +1,77 @@
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+# mini-message-app
 
-### ChatsApp Application
+A real-time, WhatsApp-style chat UI built with React and Firebase — Google sign-in, live message sync via Firestore, multiple chat rooms, and an emoji picker. Originally built in 2020 as a way to learn Firebase's realtime data model; revived and modernized in 2026.
 
-![](image/ss.png)
+![screenshot](image/ss.png)
 
-## Available Scripts
+## How it works
 
-In the project directory, you can run:
+```mermaid
+flowchart LR
+    U["User"] -->|Google sign-in| A["Firebase Auth"]
+    A -->|user session| App["React App"]
+    App -->|create room / send message| FS[("Cloud Firestore")]
+    FS -->|onSnapshot: live updates| App
+    App -->|served via| H["Firebase Hosting"]
 
-### `npm start`
+    style FS fill:#0a66c2,color:#fff
+    style A fill:#f9a825,color:#000
+```
 
-Runs the app in the development mode.<br />
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+There's no custom backend — Firestore's `onSnapshot` listeners push new rooms and messages to every connected client directly, so the "server" logic is just security rules plus whatever the client writes.
 
-The page will reload if you make edits.<br />
-You will also see any lint errors in the console.
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant App as React App
+    participant FS as Firestore
 
-### `npm test`
+    U->>App: Click "Add New Chat"
+    App->>FS: addDoc(rooms, {name})
+    FS-->>App: onSnapshot fires for all clients
+    U->>App: Type message, hit Send
+    App->>FS: addDoc(rooms/{id}/messages, {message, name, timeStamp})
+    FS-->>App: onSnapshot fires, message appears instantly
+```
 
-Launches the test runner in the interactive watch mode.<br />
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Stack
 
-### `npm run build`
+- **React 18** + **React Router v6**
+- **Firebase v11** (modular SDK) — Auth (Google provider) + Cloud Firestore
+- **MUI v9** (`@mui/material`, `@mui/icons-material`) for icons and layout primitives
+- **emoji-picker-react v4**
+- Bootstrapped with Create React App (`react-scripts`)
 
-Builds the app for production to the `build` folder.<br />
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Project structure
 
-The build is minified and the filenames include the hashes.<br />
-Your app is ready to be deployed!
+```
+src/
+  firebase.js       Firebase app/auth/firestore initialization
+  StateProvider.js  Small useReducer-based global store (holds the signed-in user)
+  reducer.js        Reducer + action types for StateProvider
+  App.js            Top-level router: Login screen if signed out, Sidebar + Chatbar if signed in
+  Login.js          Google sign-in screen
+  Sidebar.js        Room list, subscribes to the `rooms` collection
+  SidebarChat.js     One room row; also doubles as the "Add New Chat" row
+  Chatbar.js        Active room: message list, send box, emoji picker
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+## Running locally
 
-### `npm run eject`
+```bash
+npm install
+npm start        # http://localhost:3000
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
+Google sign-in will only work from an origin that's been authorized in this project's Firebase Auth settings and Google Cloud OAuth client (`whatsapp-mern-1ae85.web.app`, `whatsapp-mern-1ae85.firebaseapp.com` are authorized today). To run this against your own Firebase project instead of the original demo one, swap the config in `src/firebase.js` for your own project's config and add your own dev origin to its OAuth client.
 
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+## Known limitations
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
+- The sidebar search box (`Sidebar.js`) is UI-only — it isn't wired to any filtering logic.
+- "Add New Chat" uses the browser's native `prompt()` for the room name rather than a custom modal.
+- No message editing/deletion, typing indicators, or read receipts — this was a learning project focused on getting live sync working, not a full WhatsApp clone.
+- `react-scripts` (Create React App) is no longer actively maintained upstream; it still builds and runs fine here, but a future pass could migrate to Vite.
 
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
+## History
 
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/code-splitting
-
-### Analyzing the Bundle Size
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size
-
-### Making a Progressive Web App
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app
-
-### Advanced Configuration
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/advanced-configuration
-
-### Deployment
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/deployment
-
-### `npm run build` fails to minify
-
-This section has moved here: https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify
+Built in 2020 while learning Firebase; the original Google OAuth client for the project had since been deleted (a side effect of a 5-year-dormant Google Cloud project) and the dependencies were multiple major versions behind. Both were fixed as part of a 2026 pass that also moved the codebase onto the modular Firebase SDK, MUI v9, and React Router v6.
