@@ -3,15 +3,18 @@ import { createRoot } from 'react-dom/client';
 import './index.css';
 import App from './App';
 import * as serviceWorker from './serviceWorker';
-import reducer, { initialState } from './reducer';
-import { StateProvider } from './StateProvider';
+import reducer, { initialState } from './context/reducer';
+import { StateProvider } from './context/StateProvider';
+import { ThemeProvider } from './context/ThemeContext';
 
 const root = createRoot(document.getElementById('root'));
 root.render(
   <React.StrictMode>
-    <StateProvider initialState={initialState} reducer={reducer}>
-      <App />
-    </StateProvider>
+    <ThemeProvider>
+      <StateProvider initialState={initialState} reducer={reducer}>
+        <App />
+      </StateProvider>
+    </ThemeProvider>
   </React.StrictMode>
 );
 
