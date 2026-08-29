@@ -8,7 +8,7 @@ import SettingsBrightnessIcon from '@mui/icons-material/SettingsBrightness'
 import LogoutIcon from '@mui/icons-material/Logout'
 import CheckIcon from '@mui/icons-material/Check'
 import { Avatar, IconButton, Menu, MenuItem, ListItemIcon, ListItemText, Divider } from '@mui/material'
-import { collection, getDocs, writeBatch, updateDoc, onSnapshot, query, where } from 'firebase/firestore'
+import { collection, onSnapshot, query, where } from 'firebase/firestore'
 import { signOut } from 'firebase/auth'
 import { useLocation, useNavigate } from 'react-router-dom'
 import SidebarChat from './SidebarChat'
@@ -23,9 +23,6 @@ const THEME_OPTIONS = [
     { value: 'system', label: 'System default', icon: SettingsBrightnessIcon },
 ]
 
-const MIGRATION_FLAG = 'chatbox-legacy-rooms-migrated-v1'
-const MEMBER_MIGRATION_FLAG = 'chatbox-legacy-members-migrated-v1'
-
 function Sidebar() {
     const [publicRooms, setPublicRooms] = useState([])
     const [memberRooms, setMemberRooms] = useState([])
@@ -37,44 +34,6 @@ function Sidebar() {
     const location = useLocation()
     const navigate = useNavigate()
     const activeRoomId = location.pathname.startsWith('/rooms/') ? location.pathname.split('/rooms/')[1] : null
-
-    // One-time migration: legacy 2020 rooms have no `members`/`type` field.
-    // Mark them public so they stay visible once membership rules apply.
-    useEffect(() => {
-        if (localStorage.getItem(MIGRATION_FLAG)) return
-        getDocs(collection(db, 'rooms')).then(async (snapshot) => {
-            const legacy = snapshot.docs.filter(d => !('members' in d.data()))
-            if (legacy.length > 0) {
-                const batch = writeBatch(db)
-                legacy.forEach(d => batch.update(d.ref, { public: true, type: 'group' }))
-                await batch.commit()
-            }
-            localStorage.setItem(MIGRATION_FLAG, '1')
-        }).catch((err) => console.error('legacy room migration failed', err))
-    }, [])
-
-    // One-time backfill: derive a display-only member roster for legacy rooms
-    // from who actually sent messages in them. Keyed by name (no real UID
-    // exists for these historical senders), so this never touches the real
-    // `members` array used for access control.
-    useEffect(() => {
-        if (localStorage.getItem(MEMBER_MIGRATION_FLAG)) return
-        (async () => {
-            const snapshot = await getDocs(query(collection(db, 'rooms'), where('public', '==', true)))
-            const legacy = snapshot.docs.filter(d => !d.data().memberNames)
-            for (const roomDoc of legacy) {
-                const messagesSnap = await getDocs(collection(db, 'rooms', roomDoc.id, 'messages'))
-                const names = new Set()
-                messagesSnap.docs.forEach(m => { const n = m.data().name; if (n) names.add(n) })
-                if (names.size > 0) {
-                    const memberNames = {}
-                    names.forEach(n => { memberNames[n] = n })
-                    await updateDoc(roomDoc.ref, { memberNames })
-                }
-            }
-            localStorage.setItem(MEMBER_MIGRATION_FLAG, '1')
-        })().catch((err) => console.error('legacy member migration failed', err))
-    }, [])
 
     useEffect(() => {
         const unsubPublic = onSnapshot(query(collection(db, 'rooms'), where('public', '==', true)), (snapshot) =>
